@@ -1,0 +1,60 @@
+set ns [new Simulator]
+set nf [open lab1.nam w]
+$ns namtrace-all $nf
+set tf [open lab1.tr w]
+$ns trace-all $tf
+
+proc finish{} {
+global ns nf tf
+$ns flush-trace
+close $ns
+close $tf
+exec nam lab1.nam & 
+exit 0
+}
+
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+
+$ns duplex-link $n0 $n1 1mb 2ms DropTail
+$ns duplex-link $n2 $n3 512kb 10ms DropTail
+$ns queue-limit $n0 $n1 2
+
+$ns udp0 [New Agent/UDP]
+$ns Attach-Agent $n0 $udp0
+
+$ns cbr0 [New Application/Traffic/CBR]
+$cbr0 set packet_size_ 500
+$cbr0 set interval_ 0.005
+$cbr0 Attach-Agent $udp0
+
+$ns null0 [New Agent/Null]
+$ns Attach-Agent $n3 $null0
+
+$ns connect $udp0 $null0
+
+$ns at 0.1 "$cbr0 start"
+$ns at 1.0 "finish"
+
+$ns run
+
+AWK.file
+BEGIN {
+        c=0;
+        r=0;
+        }
+        {
+            if($1=='d')
+        {
+            c++
+        }
+            else if($1=='r')
+        {
+            r++
+    }
+}
+END{
+printf("The number of packets dropped = %d \n",c);
+printf("The number of packets received = %d \n",r);
+}
